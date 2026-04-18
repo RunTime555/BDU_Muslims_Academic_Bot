@@ -2,6 +2,19 @@ require('dotenv').config();
 const { Telegraf, Markup } = require('telegraf');
 const { PrismaClient } = require('@prisma/client');
 
+// ── Startup validation ───────────────────────────────────────────────────────
+
+if (!process.env.BOT_TOKEN) {
+  console.error('❌ BOT_TOKEN is not set. Please add it to your .env file.');
+  process.exit(1);
+}
+
+const ADMIN_ID = Number(process.env.ADMIN_ID);
+if (!process.env.ADMIN_ID || isNaN(ADMIN_ID)) {
+  console.error('❌ ADMIN_ID is not set or is invalid. Please add a valid numeric Telegram user ID to your .env file.');
+  process.exit(1);
+}
+
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const prisma = new PrismaClient();
 
@@ -106,7 +119,7 @@ bot.action(/^cat:(.+):(Exam|Handout|Book)$/, async (ctx) => {
     }
 
     await ctx.reply(
-      `📋 *${categoryLabel}* for *${departmentName}*:`,
+      `📋 *${categoryLabel}* for *${departmentName}* — sending ${materials.length} file(s)…`,
       { parse_mode: 'Markdown' }
     );
 
@@ -133,8 +146,7 @@ bot.action(/^cat:(.+):(Exam|Handout|Book)$/, async (ctx) => {
 //   3. The bot replies with the file_id and a reminder of the expected format.
 
 bot.on('document', async (ctx) => {
-  const adminId = Number(process.env.ADMIN_ID);
-  if (ctx.from.id !== adminId) return; // ignore non-admins
+  if (ctx.from.id !== ADMIN_ID) return; // ignore non-admins
 
   const { file_id, file_name } = ctx.message.document;
   const caption = ctx.message.caption || '';
