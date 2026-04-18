@@ -1,0 +1,32 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Department {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  materials Material[]
+}
+
+model Material {
+  id           Int        @id @default(autoincrement())
+  title        String
+  fileId       String
+  category     Category
+  department   Department @relation(fields: [departmentId], references: [id])
+  departmentId Int
+}
+
+enum Category {
+  Exam
+  Handout
+  Book
+}

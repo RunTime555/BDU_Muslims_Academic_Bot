@@ -1,0 +1,19 @@
+{
+  "name": "bdu-muslims-academic-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for Bahir Dar Muslim Academics Jemea (BDMAJ) to help students access educational materials.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.13.0",
+    "dotenv": "^16.4.5",
+    "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "prisma": "^5.13.0"
+  }
+}
