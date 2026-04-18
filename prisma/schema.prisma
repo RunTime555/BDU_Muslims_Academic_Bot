@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Connection URL is configured via DATABASE_URL in prisma.config.ts (Prisma 7+)
+  // Copy .env.example to .env and set DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DATABASE
+}
+
+model Department {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  slug      String     @unique
+  materials Material[]
+  createdAt DateTime   @default(now())
+}
+
+model Material {
+  id           Int        @id @default(autoincrement())
+  title        String
+  fileId       String
+  category     Category
+  department   Department @relation(fields: [departmentId], references: [id])
+  departmentId Int
+  createdAt    DateTime   @default(now())
+}
+
+enum Category {
+  EXAMS
+  HANDOUTS
+  REFERENCE_BOOKS
+}

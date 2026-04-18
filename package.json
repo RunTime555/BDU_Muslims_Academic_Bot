@@ -1,0 +1,40 @@
+{
+  "name": "bdu_muslims_academic_bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for BDU Muslim Academics Jemea (BDUMAJ) to provide educational materials to students",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "node prisma/seed.js",
+    "db:studio": "prisma studio",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RunTime555/BDU_Muslims_Academic_Bot.git"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/RunTime555/BDU_Muslims_Academic_Bot/issues"
+  },
+  "homepage": "https://github.com/RunTime555/BDU_Muslims_Academic_Bot#readme",
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "dotenv": "^17.4.2",
+    "pg": "^8.20.0",
+    "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "prisma": "^7.7.0"
+  }
+}
