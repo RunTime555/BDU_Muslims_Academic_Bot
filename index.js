@@ -2,169 +2,212 @@ require('dotenv').config();
 const { Telegraf, Markup } = require('telegraf');
 const { PrismaClient } = require('@prisma/client');
 
-// ── Startup validation ───────────────────────────────────────────────────────
-
-if (!process.env.BOT_TOKEN) {
-  console.error('❌ BOT_TOKEN is not set. Please add it to your .env file.');
-  process.exit(1);
-}
-
-const ADMIN_ID = Number(process.env.ADMIN_ID);
-if (!process.env.ADMIN_ID || isNaN(ADMIN_ID)) {
-  console.error('❌ ADMIN_ID is not set or is invalid. Please add a valid numeric Telegram user ID to your .env file.');
-  process.exit(1);
-}
-
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const prisma = new PrismaClient();
-
-// ── Constants ────────────────────────────────────────────────────────────────
 
 const DEPARTMENTS = [
   'Software Engineering',
   'Computer Science',
   'Cyber Security',
   'Information Systems',
-  'Information Technology',
+  'Information Technology'
 ];
 
-const CATEGORY_LABELS = {
-  Exam: 'Exams 📝',
-  Handout: 'Handouts 📚',
-  Book: 'Reference Books 📖',
-};
+// ── Keyboards & Helpers ──────────────────────────────────────────────────────
 
-// Maps display label → DB enum value
-const LABEL_TO_CATEGORY = Object.fromEntries(
-  Object.entries(CATEGORY_LABELS).map(([key, label]) => [label, key])
-);
+const mainKeyboards = () => Markup.keyboard([
+  ['📚 Academic Materials', '🎓 Exit Exam Resources'],
+  ['ℹ️ About Bot']
+]).resize();
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Build the main Reply Keyboard shown after /start */
-function departmentKeyboard() {
+const departmentKeyboard = () => {
   const rows = [];
   for (let i = 0; i < DEPARTMENTS.length; i += 2) {
     rows.push(DEPARTMENTS.slice(i, i + 2));
   }
-  return Markup.keyboard(rows).resize();
-}
+  return Markup.keyboard([...rows, ['🏠 Back to Main Menu']]).resize();
+};
 
-/** Build the Inline Keyboard shown after a department is selected */
-function categoryInlineKeyboard(departmentName) {
-  const buttons = Object.entries(CATEGORY_LABELS).map(([category, label]) =>
-    Markup.button.callback(label, `cat:${departmentName}:${category}`)
-  );
-  return Markup.inlineKeyboard(buttons, { columns: 1 });
-}
+const backToMenuBtn = Markup.button.callback('🏠 Back to Main Menu', 'main_menu');
 
-// ── /start ───────────────────────────────────────────────────────────────────
+// ── Bot Logic ────────────────────────────────────────────────────────────────
 
-bot.start((ctx) =>
-  ctx.reply(
-    '🕌 Assalamu Alaikum! Welcome to the *Bahir Dar Muslim Academics Jemea (BDMAJ)* Bot.\n\n' +
-      'Please select your department from the menu below to access study materials.',
-    {
-      parse_mode: 'Markdown',
-      ...departmentKeyboard(),
-    }
-  )
-);
+// 🌟 Startup Greeting with HTML Styling
+bot.start((ctx) => {
+  const welcomeMessage = 
+    `🌟 <b>Assalamu Alaikum Warahmatullah!</b> 🌟\n\n` +
+    `Welcome to the <b>BDU Muslim Academics Bot</b>\n` +
+    `<i>"Your digital library for academic excellence"</i>\n` +
+    `__________________________________________\n\n` +
+    `📌 <b>What we offer:</b>\n` +
+    `• 📚 Updated Handouts\n` +
+    `• 📝 Mid & Final Exams\n` +
+    `• 🎓 Exit Exam Resources\n\n` +
+    `<b>Please select an option from the menu below:</b>`;
 
-// ── Department selection (Reply Keyboard) ────────────────────────────────────
-
-bot.hears(DEPARTMENTS, (ctx) => {
-  const department = ctx.message.text;
-  return ctx.reply(
-    `📂 *${department}*\n\nChoose a category:`,
-    {
-      parse_mode: 'Markdown',
-      ...categoryInlineKeyboard(department),
-    }
-  );
+  return ctx.reply(welcomeMessage, {
+    parse_mode: 'HTML',
+    ...mainKeyboards()
+  });
 });
 
-// ── Category selection (Inline Keyboard callback) ────────────────────────────
+// ℹ️ About Bot Section with HTML Styling
+bot.hears('ℹ️ About Bot', (ctx) => {
+  const aboutText = 
+    `🤖 <b>About BDU Muslim Academics Bot</b>\n\n` +
+    `This bot is designed to help students at <b>Bahir Dar University</b> access academic resources easily.\n\n` +
+    `✅ <b>Features:</b>\n` +
+    `• Handouts & Reference materials\n` +
+    `• Mid and Final Exams\n` +
+    `• Exit Exam Resources for seniors\n\n` +
+    `<i>Developed for the BDU Muslim Community. May it be a source of benefit for all!</i>`;
 
-bot.action(/^cat:(.+):(Exam|Handout|Book)$/, async (ctx) => {
-  await ctx.answerCbQuery();
+  return ctx.reply(aboutText, { parse_mode: 'HTML' });
+});
 
-  const departmentName = ctx.match[1];
-  const category = ctx.match[2];
-  const categoryLabel = CATEGORY_LABELS[category];
+// 🏠 Back to Main Menu
+bot.hears('🏠 Back to Main Menu', (ctx) => {
+  return ctx.reply('What would you like to access today?', mainKeyboards());
+});
 
+// 1. Academic Materials Flow
+bot.hears('📚 Academic Materials', (ctx) => {
+  ctx.reply('📂 <b>Please select your department:</b>', { parse_mode: 'HTML', ...departmentKeyboard() });
+});
+
+bot.hears(DEPARTMENTS, (ctx) => {
+  const dept = ctx.message.text;
+  const years = dept === 'Software Engineering' ? [2, 3, 4, 5] : [2, 3, 4];
+  const buttons = years.map(y => Markup.button.callback(`${y}th Year`, `year:${dept}:${y}`));
+  
+  return ctx.reply(`🎓 <b>${dept}</b>\nSelect Academic Year:`, {
+    parse_mode: 'HTML',
+    ...Markup.inlineKeyboard([buttons, [backToMenuBtn]], { columns: 2 })
+  });
+});
+
+// Year -> Category Selection
+bot.action(/^year:(.+):(\d)$/, (ctx) => {
+  ctx.answerCbQuery();
+  const [_, dept, year] = ctx.match;
+  const buttons = [
+    [Markup.button.callback('Exams 📝', `cat:${dept}:${year}:Exam`),
+     Markup.button.callback('Handouts 📚', `cat:${dept}:${year}:Handout`)],
+    [Markup.button.callback('⬅️ Back to Years', `back_to_dept:${dept}`), backToMenuBtn]
+  ];
+  return ctx.editMessageText(`📂 <b>${dept}</b> | Year ${year}\nSelect Category:`, {
+    parse_mode: 'HTML',
+    ...Markup.inlineKeyboard(buttons)
+  });
+});
+
+// 2. Exit Exam Resources Flow
+bot.hears('🎓 Exit Exam Resources', (ctx) => {
+  const buttons = DEPARTMENTS.map(dept => [Markup.button.callback(dept, `exit:${dept}`)]);
+  ctx.reply('🎓 <b>Exit Exam Resources</b>\nSelect Department:', {
+    parse_mode: 'HTML',
+    ...Markup.inlineKeyboard([...buttons, [backToMenuBtn]])
+  });
+});
+
+bot.action(/^exit:(.+)$/, async (ctx) => {
+  ctx.answerCbQuery();
+  const deptName = ctx.match[1];
   try {
-    const department = await prisma.department.findUnique({
-      where: { name: departmentName },
-    });
+    const department = await prisma.department.findUnique({ where: { name: deptName } });
+    if (!department) return ctx.reply('⚠️ Department not found in database.');
 
-    if (!department) {
-      return ctx.reply(
-        `⚠️ Department "${departmentName}" was not found in the database. Please contact an admin.`
-      );
-    }
-
-    const materials = await prisma.material.findMany({
-      where: {
-        departmentId: department.id,
-        category,
-      },
-    });
+    const materials = await prisma.material.findMany({ where: { departmentId: department.id, category: 'ExitExam' } });
 
     if (materials.length === 0) {
-      return ctx.reply(
-        `😔 No *${categoryLabel}* are available for *${departmentName}* yet. Check back later!`,
-        { parse_mode: 'Markdown' }
-      );
+      return ctx.reply(`😔 No Exit Exam resources found for ${deptName} yet.`, Markup.inlineKeyboard([backToMenuBtn]));
     }
-
-    await ctx.reply(
-      `📋 *${categoryLabel}* for *${departmentName}* — sending ${materials.length} file(s)…`,
-      { parse_mode: 'Markdown' }
-    );
-
-    for (const material of materials) {
-      await ctx.replyWithDocument(material.fileId, {
-        caption: material.title,
-      });
-    }
-  } catch (error) {
-    console.error('Error fetching materials:', error);
-    await ctx.reply('⚠️ An error occurred while fetching materials. Please try again later.');
+    for (const m of materials) await ctx.replyWithDocument(m.fileId, { caption: m.title });
+  } catch (err) {
+    ctx.reply('⚠️ Error fetching resources.');
   }
 });
 
-// ── Admin: capture file_id ────────────────────────────────────────────────────
-//
-// When an admin (whose Telegram user ID is set in ADMIN_ID) forwards or sends
-// a document to the bot, the bot replies with the file_id so the admin can
-// save it to the database via `prisma studio` or a migration seed script.
-//
-// Usage:
-//   1. Set ADMIN_ID in .env to your Telegram numeric user ID.
-//   2. Send any document to the bot.
-//   3. The bot replies with the file_id and a reminder of the expected format.
-
-bot.on('document', async (ctx) => {
-  if (ctx.from.id !== ADMIN_ID) return; // ignore non-admins
-
-  const { file_id, file_name } = ctx.message.document;
-  const caption = ctx.message.caption || '';
-
-  await ctx.reply(
-    `📎 *File received*\n\n` +
-      `*Name:* ${file_name || 'unknown'}\n` +
-      `*Caption:* ${caption || '(none)'}\n\n` +
-      `*file\\_id:*\n\`${file_id}\`\n\n` +
-      `Use this \`file_id\` when adding a Material record to the database.`,
-    { parse_mode: 'Markdown' }
-  );
+// Category -> Semester Selection
+bot.action(/^cat:(.+):(\d):(.+)$/, (ctx) => {
+  ctx.answerCbQuery();
+  const [_, dept, year, cat] = ctx.match;
+  const buttons = [
+    [Markup.button.callback('1st Semester', `sem:${dept}:${year}:${cat}:1`),
+     Markup.button.callback('2nd Semester', `sem:${dept}:${year}:${cat}:2`)],
+    [Markup.button.callback('⬅️ Back', `year:${dept}:${year}`), backToMenuBtn]
+  ];
+  return ctx.editMessageText(`📅 <b>${dept} (Year ${year})</b>\nSelect Semester for ${cat}:`, {
+    parse_mode: 'HTML',
+    ...Markup.inlineKeyboard(buttons)
+  });
 });
 
-// ── Launch ───────────────────────────────────────────────────────────────────
+// Semester -> Final Check (Exam vs Handout)
+bot.action(/^sem:(.+):(\d):(.+):(\d)$/, async (ctx) => {
+  ctx.answerCbQuery();
+  const [_, dept, year, cat, sem] = ctx.match;
+  
+  const department = await prisma.department.findUnique({ where: { name: dept } });
+  if (!department) return ctx.reply('⚠️ Department not found.');
 
-bot.launch().then(() => console.log('🤖 BDMAJ Bot is running…'));
+  if (cat === 'Exam') {
+    const buttons = [
+      [Markup.button.callback('Mid Exam 🌗', `extype:${dept}:${year}:${sem}:Mid`),
+       Markup.button.callback('Final Exam 🌕', `extype:${dept}:${year}:${sem}:Final`)],
+      [Markup.button.callback('⬅️ Back', `cat:${dept}:${year}:Exam`), backToMenuBtn]
+    ];
+    return ctx.editMessageText(`📝 <b>Semester ${sem} Exams</b>\nChoose Exam Type:`, {
+      parse_mode: 'HTML',
+      ...Markup.inlineKeyboard(buttons)
+    });
+  } else {
+    const materials = await prisma.material.findMany({
+      where: { departmentId: department.id, year: parseInt(year), semester: parseInt(sem), category: 'Handout' }
+    });
 
-// Graceful shutdown
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+    if (materials.length === 0) {
+      return ctx.reply(`😔 No Handouts found for ${dept} Year ${year} Sem ${sem}.`, 
+        Markup.inlineKeyboard([[Markup.button.callback('⬅️ Back', `cat:${dept}:${year}:Handout`), backToMenuBtn]]));
+    }
+    for (const m of materials) await ctx.replyWithDocument(m.fileId, { caption: m.title });
+  }
+});
+
+// Exam Type Selection Result
+bot.action(/^extype:(.+):(\d):(\d):(.+)$/, async (ctx) => {
+  ctx.answerCbQuery();
+  const [_, dept, year, sem, type] = ctx.match;
+  const department = await prisma.department.findUnique({ where: { name: dept } });
+  const materials = await prisma.material.findMany({
+    where: { departmentId: department.id, year: parseInt(year), semester: parseInt(sem), category: 'Exam', examType: type }
+  });
+
+  if (materials.length === 0) {
+    return ctx.reply(`😔 No <b>${type} exam</b> found for this course.`, {
+      parse_mode: 'HTML',
+      ...Markup.inlineKeyboard([[Markup.button.callback('⬅️ Back', `sem:${dept}:${year}:Exam:${sem}`), backToMenuBtn]])
+    });
+  }
+  for (const m of materials) await ctx.replyWithDocument(m.fileId, { caption: m.title });
+});
+
+// Navigation Callbacks
+bot.action('main_menu', (ctx) => {
+  ctx.answerCbQuery();
+  return ctx.reply('What would you like to access today?', mainKeyboards());
+});
+
+bot.action(/^back_to_dept:(.+)$/, (ctx) => {
+  ctx.answerCbQuery();
+  return ctx.reply('Please select your department:', departmentKeyboard());
+});
+
+// Admin Capture
+bot.on('document', async (ctx) => {
+  if (ctx.from.id !== Number(process.env.ADMIN_ID)) return;
+  const { file_id, file_name } = ctx.message.document;
+  await ctx.reply(`✅ <b>File Received</b>\nID: <code>${file_id}</code>\nName: ${file_name}`, { parse_mode: 'HTML' });
+});
+
+bot.launch().then(() => console.log('🤖 BDU Muslim Bot is ONLINE!'));

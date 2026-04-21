@@ -1,5 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// BDU Muslims Academic Bot - Final Corrected Schema
 
 generator client {
   provider = "prisma-client-js"
@@ -20,7 +19,11 @@ model Material {
   id           Int        @id @default(autoincrement())
   title        String
   fileId       String
+  year         Int?       // Exit Exam አመት ስለማይኖረው Optional (?) አደረግነው
+  semester     Int?       // Exit Exam ሴሚስተር ስለማይኖረው Optional (?) አደረግነው
   category     Category
+  examType     ExamType?  
+  courseName   String?    // ለአንዳንድ ፋይሎች የግድ አስፈላጊ ላይሆን ስለሚችል ? አደረግነው
   department   Department @relation(fields: [departmentId], references: [id])
   departmentId Int
 }
@@ -28,5 +31,10 @@ model Material {
 enum Category {
   Exam
   Handout
-  Book
+  ExitExam   // ይህ ካልተጨመረ Exit Exam ዳታ ስትሞዪ ስህተት ያሳያል
+}
+
+enum ExamType {
+  Mid
+  Final
 }
