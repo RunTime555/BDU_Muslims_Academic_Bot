@@ -1,3 +1,9 @@
+const http = require('http');
+http.createServer((req, res) => {
+  res.write('Bot is running!');
+  res.end();
+}).listen(process.env.PORT || 3000);
+
 require('dotenv').config();
 const { Telegraf, Markup } = require('telegraf');
 const { PrismaClient } = require('@prisma/client');
