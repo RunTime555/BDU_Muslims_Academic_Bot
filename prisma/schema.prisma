@@ -18,12 +18,13 @@ model Department {
 model Material {
   id           Int        @id @default(autoincrement())
   title        String
-  fileId       String
-  year         Int?       // Exit Exam አመት ስለማይኖረው Optional (?) አደረግነው
-  semester     Int?       // Exit Exam ሴሚስተር ስለማይኖረው Optional (?) አደረግነው
+  fileId       String?    // Optional አደረግነው
+  fileUrl      String?    // ይህ ነው የድራይቭ ሊንክ መቀበያ ሳጥኑ!
+  year         Int?
+  semester     Int?
   category     Category
   examType     ExamType?  
-  courseName   String?    // ለአንዳንድ ፋይሎች የግድ አስፈላጊ ላይሆን ስለሚችል ? አደረግነው
+  courseName   String?
   department   Department @relation(fields: [departmentId], references: [id])
   departmentId Int
 }
