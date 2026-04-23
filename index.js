@@ -216,4 +216,12 @@ bot.on('document', async (ctx) => {
   await ctx.reply(`✅ <b>File Received</b>\nID: <code>${file_id}</code>\nName: ${file_name}`, { parse_mode: 'HTML' });
 });
 
+process.on('uncaughtException', (err) => {
+    console.error('There was an uncaught error', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 bot.launch().then(() => console.log('🤖 BDU Muslim Bot is ONLINE!'));
