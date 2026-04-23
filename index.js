@@ -265,4 +265,7 @@ process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-bot.launch().then(() => console.log('🤖 BDU Muslim Bot is ONLINE!'));
+
+bot.launch()
+  .then(() => console.log('🤖 Bot is ONLINE!'))
+  .catch((err) => console.error('❌ Bot failed to launch:', err));
