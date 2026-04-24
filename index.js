@@ -266,6 +266,26 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 
-bot.launch()
-  .then(() => console.log('🤖 Bot is ONLINE!'))
-  .catch((err) => console.error('❌ Bot failed to launch:', err));
+// Add error handling to launch and simple health check for Render
+const http = require('http');
+
+// 1. Create a dummy server for Render to stay awake
+http.createServer((req, res) => {
+  res.write('Bot is running!');
+  res.end();
+}).listen(process.env.PORT || 3000);
+
+// 2. Optimized launch settings
+bot.launch({
+  allowedUpdates: ['message', 'callback_query'],
+})
+.then(() => {
+  console.log('✅ BDU Muslim Bot is ONLINE and POLLING!');
+})
+.catch((err) => {
+  console.error('❌ Failed to launch bot:', err);
+});
+
+// Enable graceful stop
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
