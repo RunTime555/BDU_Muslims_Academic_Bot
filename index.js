@@ -267,13 +267,6 @@ process.on('unhandledRejection', (reason, promise) => {
 
 
 // Add error handling to launch and simple health check for Render
-const http = require('http');
-
-// 1. Create a dummy server for Render to stay awake
-http.createServer((req, res) => {
-  res.write('Bot is running!');
-  res.end();
-}).listen(process.env.PORT || 3000);
 
 // 2. Optimized launch settings
 bot.launch({
