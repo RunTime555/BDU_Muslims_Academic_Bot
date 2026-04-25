@@ -1,7 +1,9 @@
 const http = require('http');
+
+// This keeps the Render server active
 http.createServer((req, res) => {
-  res.write('Bot is running!');
-  res.end();
+  res.writeHead(200);
+  res.end('Bot is Active');
 }).listen(process.env.PORT || 3000);
 
 require('dotenv').config();
