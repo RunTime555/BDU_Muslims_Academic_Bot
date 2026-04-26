@@ -18,21 +18,25 @@ model Department {
 model Material {
   id           Int        @id @default(autoincrement())
   title        String
-  fileId       String?    // Optional አደረግነው
-  fileUrl      String?    // ይህ ነው የድራይቭ ሊንክ መቀበያ ሳጥኑ!
+  fileId       String?    
+  fileUrl      String?    // የድራይቭ ሊንክ መቀበያ
   year         Int?
   semester     Int?
   category     Category
   examType     ExamType?  
   courseName   String?
-  department   Department @relation(fields: [departmentId], references: [id])
-  departmentId Int
+  
+  // departmentId እና department ላይ "?" ጨምሬባቸዋለሁ (Optional እንዲሆኑ)
+  // ምክንያቱም Common Exams ዲፓርትመንት ላያስፈልጋቸው ይችላል
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId Int?
 }
 
 enum Category {
   Exam
   Handout
-  ExitExam   // ይህ ካልተጨመረ Exit Exam ዳታ ስትሞዪ ስህተት ያሳያል
+  ExitExam
+  CommonExam   // ይህ ነው "Mid & Final Exam" ማዕከል ላይ እንዲታይ የሚያደርገው!
 }
 
 enum ExamType {
