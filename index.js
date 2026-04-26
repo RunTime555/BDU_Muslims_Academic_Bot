@@ -29,7 +29,7 @@ const mainKeyboards = () => Markup.keyboard([
 ]).resize();
 
 // "Back to Main Menu" በተን ለ Inline Keyboard
-const backBtn = Markup.button.callback('🏠 Back to Main Menu', 'main_menu');
+//const backBtn = Markup.button.callback('🏠 Back to Main Menu', 'main_menu');
 
 // ── Bot Logic ────────────────────────────────────────────────────────────────
 
@@ -47,10 +47,23 @@ bot.start((ctx) => {
   });
 });
 
+bot.hears('ℹ️ About Bot', (ctx) => {
+  const aboutText = 
+    `🤖 <b>About BDU Muslim Academics Bot</b>\n\n` +
+    `This bot is designed to help students at <b>Bahir Dar University</b> access academic resources easily.\n\n` +
+    `✅ <b>Features:</b>\n` +
+    `• Handouts & Reference materials\n` +
+    `• Mid and Final Exams hub\n` +
+    `• Exit Exam Resources for seniors\n\n` +
+    `<i>Developed for the BDU Muslim Community.</i>`;
+
+  return ctx.reply(aboutText, { parse_mode: 'HTML' });
+});
+
 // 🏠 Main Menu Handler
 bot.action('main_menu', async (ctx) => {
   await ctx.answerCbQuery();
-  await ctx.reply('🏠 Main Menu', mainKeyboards());
+  //await ctx.reply('🏠 Main Menu', mainKeyboards());
 });
 
 bot.hears('📚 Academic Materials', (ctx) => {
