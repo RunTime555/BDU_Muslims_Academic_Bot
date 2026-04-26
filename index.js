@@ -61,10 +61,10 @@ bot.hears('ℹ️ About Bot', (ctx) => {
 });
 
 // 🏠 Main Menu Handler
-bot.action('main_menu', async (ctx) => {
-  await ctx.answerCbQuery();
+//bot.action('main_menu', async (ctx) => {
+ // await ctx.answerCbQuery();
   //await ctx.reply('🏠 Main Menu', mainKeyboards());
-});
+// });
 
 bot.hears('📚 Academic Materials', (ctx) => {
   const rows = [];
