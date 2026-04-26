@@ -23,13 +23,18 @@ const DEPARTMENTS = [
 
 // ── Keyboards & Helpers ──────────────────────────────────────────────────────
 
+// ዋናው ሜኑ (ሁልጊዜ ከታች የሚቀመጥ)
 const mainKeyboards = () => Markup.keyboard([
   ['📚 Academic Materials', '🎓 Exit Exam Resources'],
   ['📝 Mid & Final Exams', 'ℹ️ About Bot']
 ]).resize();
 
-// "Back to Main Menu" በተን ለ Inline Keyboard
-//const backBtn = Markup.button.callback('🏠 Back to Main Menu', 'main_menu');
+// ረድፎችን ለመከፋፈል የሚረዳ (Helper)
+function chunk(array, size) {
+  const result = [];
+  for (let i = 0; i < array.length; i += size) result.push(array.slice(i, i + size));
+  return result;
+}
 
 // ── Bot Logic ────────────────────────────────────────────────────────────────
 
@@ -51,21 +56,12 @@ bot.hears('ℹ️ About Bot', (ctx) => {
   const aboutText = 
     `🤖 <b>About BDU Muslim Academics Bot</b>\n\n` +
     `This bot is designed to help students at <b>Bahir Dar University</b> access academic resources easily.\n\n` +
-    `✅ <b>Features:</b>\n` +
-    `• Handouts & Reference materials\n` +
-    `• Mid and Final Exams hub\n` +
-    `• Exit Exam Resources for seniors\n\n` +
     `<i>Developed for the BDU Muslim Community.</i>`;
 
   return ctx.reply(aboutText, { parse_mode: 'HTML' });
 });
 
-// 🏠 Main Menu Handler
-//bot.action('main_menu', async (ctx) => {
- // await ctx.answerCbQuery();
-  //await ctx.reply('🏠 Main Menu', mainKeyboards());
-// });
-
+// 📚 Academic Materials
 bot.hears('📚 Academic Materials', (ctx) => {
   const rows = [];
   for (let i = 0; i < DEPARTMENTS.length; i += 2) {
@@ -73,7 +69,7 @@ bot.hears('📚 Academic Materials', (ctx) => {
   }
   ctx.reply('📂 <b>Please select your department:</b>', { 
     parse_mode: 'HTML', 
-    ...Markup.inlineKeyboard([...rows, [backBtn]]) 
+    ...Markup.inlineKeyboard(rows) 
   });
 });
 
@@ -86,25 +82,25 @@ bot.action(/^dept:(.+)$/, (ctx) => {
   
   return ctx.editMessageText(`🎓 <b>${dept}</b>\nSelect Academic Year:`, {
     parse_mode: 'HTML',
-    ...Markup.inlineKeyboard([buttons, [backBtn]], { columns: 2 })
+    ...Markup.inlineKeyboard(chunk(buttons, 2))
   });
 });
 
 bot.action(/^year:(.+):(\d)$/, (ctx) => {
   const [_, dept, year] = ctx.match;
   const buttons = [
-    [Markup.button.callback('1st Semester', `sem:${dept}:${year}:1`),
-     Markup.button.callback('2nd Semester', `sem:${dept}:${year}:2`)],
-    [backBtn]
+    Markup.button.callback('1st Semester', `sem:${dept}:${year}:1`),
+    Markup.button.callback('2nd Semester', `sem:${dept}:${year}:2`)
   ];
   return ctx.editMessageText(`📂 <b>${dept} (Year ${year})</b>\nSelect Semester:`, {
     parse_mode: 'HTML',
-    ...Markup.inlineKeyboard(buttons)
+    ...Markup.inlineKeyboard(chunk(buttons, 2))
   });
 });
 
 bot.action(/^sem:(.+):(\d):(\d)$/, async (ctx) => {
   try {
+    await ctx.answerCbQuery();
     const [_, dept, year, sem] = ctx.match;
     const department = await prisma.department.findUnique({ where: { name: dept } });
 
@@ -118,7 +114,7 @@ bot.action(/^sem:(.+):(\d):(\d)$/, async (ctx) => {
     });
 
     if (materials.length === 0) {
-      return ctx.reply(`⚠️ No resources found for ${dept} Year ${year} Sem ${sem}.`, Markup.inlineKeyboard([backBtn]));
+      return ctx.reply(`⚠️ No resources found for ${dept} Year ${year} Sem ${sem}.`);
     }
 
     let responseText = `📚 <b>${dept} (Year ${year}, Sem ${sem})</b>\n\n`;
@@ -126,10 +122,10 @@ bot.action(/^sem:(.+):(\d):(\d)$/, async (ctx) => {
       responseText += `📍 <b>${m.title}</b>\n🔗 <a href="${m.fileUrl}">Download/View</a>\n\n`;
     });
 
-    await ctx.reply(responseText, { parse_mode: 'HTML', disable_web_page_preview: true, ...Markup.inlineKeyboard([backBtn]) });
+    await ctx.reply(responseText, { parse_mode: 'HTML', disable_web_page_preview: true });
   } catch (err) {
     console.error(err);
-    ctx.reply('⚠️ Error fetching data.', Markup.inlineKeyboard([backBtn]));
+    ctx.reply('⚠️ Error fetching data.');
   }
 });
 
@@ -144,62 +140,51 @@ bot.hears('📝 Mid & Final Exams', async (ctx) => {
     });
 
     if (courses.length === 0) {
-      return ctx.reply('⚠️ No Exams found yet.', Markup.inlineKeyboard([backBtn]));
+      return ctx.reply('⚠️ No Exams found yet.');
     }
 
     const buttons = courses.map(c => Markup.button.callback(c.title, `course:${c.title}`));
     
     return ctx.reply('📑 <b>Mid & Final Exam Hub</b>\nSelect a course:', {
       parse_mode: 'HTML',
-      ...Markup.inlineKeyboard([...chunk(buttons, 2), [backBtn]])
+      ...Markup.inlineKeyboard(chunk(buttons, 2))
     });
   } catch (err) {
     ctx.reply('⚠️ Database Error.');
   }
 });
 
-// ይሄኛው ተማሪው ኮርስ ሲመርጥ Mid ወይም Final እንዲመርጥ ይጠይቃል
 bot.action(/^course:(.+)$/, (ctx) => {
   const courseTitle = ctx.match[1];
   const buttons = [
-    [Markup.button.callback('Mid Exam 📝', `extype:${courseTitle}:Mid`),
-     Markup.button.callback('Final Exam 🏁', `extype:${courseTitle}:Final`)],
-    [backBtn]
+    Markup.button.callback('Mid Exam 📝', `extype:${courseTitle}:Mid`),
+    Markup.button.callback('Final Exam 🏁', `extype:${courseTitle}:Final`)
   ];
   return ctx.editMessageText(`🔍 <b>${courseTitle}</b>\nWhich exam do you need?`, {
     parse_mode: 'HTML',
-    ...Markup.inlineKeyboard(buttons)
+    ...Markup.inlineKeyboard(chunk(buttons, 2))
   });
 });
 
 bot.action(/^extype:(.+):(.+)$/, async (ctx) => {
   try {
+    await ctx.answerCbQuery();
     const [_, title, type] = ctx.match;
     const materials = await prisma.material.findMany({
       where: { title: title, examType: type, category: 'CommonExam' }
     });
 
     if (materials.length === 0) {
-      return ctx.reply(`⚠️ No ${type} exam found for ${title}.`, Markup.inlineKeyboard([backBtn]));
+      return ctx.reply(`⚠️ No ${type} exam found for ${title}.`);
     }
 
     for (const m of materials) {
-      await ctx.reply(`📝 *${m.title} (${type})*\n\n🔗 [Access Exam](${m.fileUrl})`, { 
-        parse_mode: 'Markdown',
-        ...Markup.inlineKeyboard([backBtn])
-      });
+      await ctx.reply(`📝 *${m.title} (${type})*\n\n🔗 [Access Exam](${m.fileUrl})`, { parse_mode: 'Markdown' });
     }
   } catch (err) {
     console.error(err);
   }
 });
-
-// Helper function to split buttons into rows
-function chunk(array, size) {
-  const result = [];
-  for (let i = 0; i < array.length; i += size) result.push(array.slice(i, i + size));
-  return result;
-}
 
 // ── 3. EXIT EXAM LOGIC ──────────────────────────────────────────────────────
 
@@ -207,20 +192,21 @@ bot.hears('🎓 Exit Exam Resources', (ctx) => {
   const buttons = DEPARTMENTS.map(dept => [Markup.button.callback(dept, `exit:${dept}`)]);
   ctx.reply('🎓 <b>Exit Exam Resources</b>\nSelect Department:', {
     parse_mode: 'HTML',
-    ...Markup.inlineKeyboard([...buttons, [backBtn]])
+    ...Markup.inlineKeyboard(buttons)
   });
 });
 
 bot.action(/^exit:(.+)$/, async (ctx) => {
   try {
+    await ctx.answerCbQuery();
     const deptName = ctx.match[1];
     const department = await prisma.department.findUnique({ where: { name: deptName } });
     const materials = await prisma.material.findMany({ where: { departmentId: department.id, category: 'ExitExam' } });
 
-    if (materials.length === 0) return ctx.reply(`No Exit Exam for ${deptName}.`, Markup.inlineKeyboard([backBtn]));
+    if (materials.length === 0) return ctx.reply(`No Exit Exam for ${deptName}.`);
 
     for (const m of materials) {
-      await ctx.reply(`🎓 *${m.title}*\n🔗 [Link](${m.fileUrl})`, { parse_mode: 'Markdown', ...Markup.inlineKeyboard([backBtn]) });
+      await ctx.reply(`🎓 *${m.title}*\n🔗 [Link](${m.fileUrl})`, { parse_mode: 'Markdown' });
     }
   } catch (err) {
     console.error(err);
