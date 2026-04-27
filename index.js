@@ -129,7 +129,7 @@ bot.action(/^sem:(.+):(\d):(\d)$/, async (ctx) => {
   }
 });
 
-// ── 2. MID & FINAL EXAMS LOGIC (COMMON HUB) ────────────────────────────────
+// ── 2. MID & FINAL EXAMS LOGIC (Simplified) ────────────────────────────────
 
 bot.hears('📝 Mid & Final Exams', async (ctx) => {
   try {
@@ -143,9 +143,9 @@ bot.hears('📝 Mid & Final Exams', async (ctx) => {
       return ctx.reply('⚠️ No Exams found yet.');
     }
 
-    const buttons = courses.map(c => Markup.button.callback(c.title, `course:${c.title}`));
+    const buttons = courses.map(c => Markup.button.callback(c.title, `view_exams:${c.title}`));
     
-    return ctx.reply('📑 <b>Mid & Final Exam Hub</b>\nSelect a course:', {
+    return ctx.reply('📑 <b>Select a course to see all available exams:</b>', {
       parse_mode: 'HTML',
       ...Markup.inlineKeyboard(chunk(buttons, 2))
     });
@@ -154,33 +154,31 @@ bot.hears('📝 Mid & Final Exams', async (ctx) => {
   }
 });
 
-bot.action(/^course:(.+)$/, (ctx) => {
-  const courseTitle = ctx.match[1];
-  const buttons = [
-    Markup.button.callback('Mid Exam 📝', `extype:${courseTitle}:Mid`),
-    Markup.button.callback('Final Exam 🏁', `extype:${courseTitle}:Final`)
-  ];
-  return ctx.editMessageText(`🔍 <b>${courseTitle}</b>\nWhich exam do you need?`, {
-    parse_mode: 'HTML',
-    ...Markup.inlineKeyboard(chunk(buttons, 2))
-  });
-});
-
-bot.action(/^extype:(.+):(.+)$/, async (ctx) => {
+// ተማሪው ኮርስ ሲመርጥ Mid እና Final ሳይል ቀጥታ ያሉትን ያመጣለታል
+bot.action(/^view_exams:(.+)$/, async (ctx) => {
   try {
     await ctx.answerCbQuery();
-    const [_, title, type] = ctx.match;
+    const courseTitle = ctx.match[1];
+    
     const materials = await prisma.material.findMany({
-      where: { title: title, examType: type, category: 'CommonExam' }
+      where: { 
+        title: courseTitle, 
+        category: 'CommonExam' 
+      }
     });
 
     if (materials.length === 0) {
-      return ctx.reply(`⚠️ No ${type} exam found for ${title}.`);
+      return ctx.reply(`⚠️ No exams found for ${courseTitle}.`);
     }
 
-    for (const m of materials) {
-      await ctx.reply(`📝 *${m.title} (${type})*\n\n🔗 [Access Exam](${m.fileUrl})`, { parse_mode: 'Markdown' });
-    }
+    let responseText = `🔍 <b>Exams for ${courseTitle}:</b>\n\n`;
+    materials.forEach(m => {
+      // Mid ወይም Final መሆኑን ከስሙ ጎን ያሳያል
+      const type = m.examType ? `(${m.examType})` : '';
+      responseText += `📍 <b>${m.title} ${type}</b>\n🔗 <a href="${m.fileUrl}">Access Exam</a>\n\n`;
+    });
+
+    await ctx.reply(responseText, { parse_mode: 'HTML', disable_web_page_preview: true });
   } catch (err) {
     console.error(err);
   }
