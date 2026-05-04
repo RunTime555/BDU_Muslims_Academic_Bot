@@ -119,7 +119,7 @@ bot.action(/^sem:(.+):(\d):(\d)$/, async (ctx) => {
 
     let responseText = `📚 <b>${dept} (Year ${year}, Sem ${sem})</b>\n\n`;
     materials.forEach(m => {
-      responseText += `📍 <b>${m.title}</b>\n🔗 <a href="${m.fileUrl}">Download/View</a>\n\n`;
+      responseText += ` <b>${m.title}</b>\n🔗 <a href="${m.fileUrl}">Download/View</a>\n\n`;
     });
 
     await ctx.reply(responseText, { parse_mode: 'HTML', disable_web_page_preview: true });
@@ -175,7 +175,7 @@ bot.action(/^view_exams:(.+)$/, async (ctx) => {
     materials.forEach(m => {
       // Mid ወይም Final መሆኑን ከስሙ ጎን ያሳያል
       const type = m.examType ? `(${m.examType})` : '';
-      responseText += `📍 <b>${m.title} ${type}</b>\n🔗 <a href="${m.fileUrl}">Access Exam</a>\n\n`;
+      responseText += ` <b>${m.title} ${type}</b>\n🔗 <a href="${m.fileUrl}">Access Exam</a>\n\n`;
     });
 
     await ctx.reply(responseText, { parse_mode: 'HTML', disable_web_page_preview: true });
